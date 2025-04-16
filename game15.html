@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Поймай квадрат</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: #eee;
+    }
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+    #score-display {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #000;
+      z-index: 5;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 4px 10px;
+      border-radius: 10px;
+    }
+    #win-img {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    #win-img img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="score-display">Счёт: <span id="score">0</span></div>
+<canvas id="game"></canvas>
+
+<div id="win-img">
+  <img src="https://i.gifer.com/BeT8.gif" alt="Победа!">
+</div>
+
+<audio id="win-sound">
+  <source src="https://www.myinstants.com/media/sounds/uwu-mommy.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreDisplay = document.getElementById('score');
+  const winImg = document.getElementById('win-img');
+  const winSound = document.getElementById('win-sound');
+
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  let square = {
+    x: 100,
+    y: 100,
+    size: 80,
+    color: 'red',
+    dx: (Math.random() < 0.5 ? 1 : -1) * 1,
+    dy: (Math.random() < 0.5 ? 1 : -1) * 1,
+  };
+
+  let score = 0;
+  const clickEffects = [];
+
+  function moveSquare() {
+    square.x += square.dx;
+    square.y += square.dy;
+
+    if (square.x <= 0 || square.x + square.size >= canvas.width) {
+      square.dx *= -1;
+    }
+    if (square.y <= 0 || square.y + square.size >= canvas.height) {
+      square.dy *= -1;
+    }
+  }
+
+  function drawClickEffects() {
+    for (let i = clickEffects.length - 1; i >= 0; i--) {
+      const fx = clickEffects[i];
+      fx.radius += 3;
+      fx.alpha -= 0.05;
+
+      if (fx.alpha <= 0) {
+        clickEffects.splice(i, 1);
+        continue;
+      }
+
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(0, 0, 0, ${fx.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    moveSquare();
+    ctx.fillStyle = square.color;
+    ctx.fillRect(square.x, square.y, square.size, square.size);
+    drawClickEffects();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    clickEffects.push({ x: mx, y: my, radius: 0, alpha: 1 });
+
+    if (
+      mx >= square.x && mx <= square.x + square.size &&
+      my >= square.y && my <= square.y + square.size
+    ) {
+      score++;
+      scoreDisplay.textContent = score;
+
+      const speedBoost = 0.5;
+      square.dx += (square.dx > 0 ? speedBoost : -speedBoost);
+      square.dy += (square.dy > 0 ? speedBoost : -speedBoost);
+
+      if (score === 9) {
+        winImg.style.display = 'flex';
+        winSound.volume = 1.0;
+        winSound.currentTime = 0.5; // запуск с 0.5 сек
+        winSound.play().catch(() => {});
+      }
+    }
+  });
+
+  draw();
+
+  window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  });
+</script>
+
+</body>
+</html>
